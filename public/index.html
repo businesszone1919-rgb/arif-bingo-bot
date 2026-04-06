@@ -5,37 +5,57 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Arif Bingo Bot</title>
     <style>
-        body { font-family: 'Arial', sans-serif; background-color: #f4f4f9; text-align: center; margin: 0; padding: 10px; }
-        .info-panel { background: white; padding: 10px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); display: flex; justify-content: space-around; font-weight: bold; margin-bottom: 15px; font-size: 0.9rem; }
-        .info-item span { color: #d32f2f; display: block; }
-        .timer { font-size: 1.5rem; color: #d32f2f; font-weight: bold; margin: 10px 0; }
-        .audio-btn { background: #ff9800; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
-        .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; max-width: 350px; margin: 0 auto; }
-        .cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; background: #fff; border: 1px solid #ccc; font-weight: bold; cursor: pointer; border-radius: 5px; font-size: 1.1rem; }
-        .cell.selected { background-color: #f44336; color: white; } /* ቀይ ምልክት */
-        .cell.matched { background-color: #4caf50; color: white; } /* አረንጓዴ ምልክት */
-        .my-card { display: none; margin-top: 20px; }
-        .small-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; max-width: 250px; margin: 10px auto; }
-        .small-cell { padding: 5px; border: 1px solid #333; font-size: 0.8rem; background: white; }
+        :root { --primary: #1a237e; --secondary: #fbc02d; --accent: #d32f2f; --bg: #f0f2f5; }
+        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg); margin: 0; padding: 0; color: #333; }
+        
+        .header { background: var(--primary); color: white; padding: 15px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        .header h1 { margin: 0; font-size: 1.5rem; letter-spacing: 2px; }
+
+        .stats-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 15px; background: #fff; margin-bottom: 10px; }
+        .stat-box { background: #f8f9fa; padding: 8px; border-radius: 8px; border: 1px solid #dee2e6; text-align: center; }
+        .stat-label { font-size: 0.7rem; color: #666; text-transform: uppercase; display: block; }
+        .stat-value { font-size: 0.9rem; font-weight: bold; color: var(--primary); }
+
+        .game-info { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; }
+        .timer-circle { width: 50px; height: 50px; border-radius: 50%; border: 4px solid var(--accent); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; background: white; }
+        .audio-pill { background: var(--secondary); border: none; padding: 8px 20px; border-radius: 20px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+        .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 15px; max-width: 400px; margin: 0 auto; }
+        .cell { aspect-ratio: 1; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1rem; border: 2px solid #e0e0e0; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .cell.selected { background: var(--accent); color: white; border-color: var(--accent); transform: scale(1.1); }
+        .cell.matched { background: #4caf50; color: white; border-color: #4caf50; }
+
+        .my-card-section { display: none; padding: 20px; }
+        .card-table { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-top: 10px; }
+        .card-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+        .small-cell { padding: 10px 5px; border: 1px solid #eee; border-radius: 4px; font-size: 0.85rem; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="info-panel">
-    <div class="info-item">Game ID <span id="gameId">#8543</span></div>
-    <div class="info-item">Players <span id="playerCount">12</span></div>
-    <div class="info-item">Derash <span id="prize">500 ETB</span></div>
-    <div class="info-item">Comm <span id="comm">10%</span></div>
+<div class="header">
+    <h1>🎰 ARIF BINGO 🎰</h1>
 </div>
 
-<button class="audio-btn" id="audioBtn">🔊 Listen: Wait...</button>
-<div class="timer" id="timer">50</div>
+<div class="stats-container">
+    <div class="stat-box"><span class="stat-label">Game ID</span><span class="stat-value">#8543</span></div>
+    <div class="stat-box"><span class="stat-label">Players</span><span class="stat-value">12</span></div>
+    <div class="stat-box"><span class="stat-label">Derash</span><span class="stat-value">500 ETB</span></div>
+    <div class="stat-box"><span class="stat-label">Comm</span><span class="stat-value">10%</span></div>
+</div>
+
+<div class="game-info">
+    <button class="audio-pill" id="audioBtn">🔊 Listen: B-15</button>
+    <div class="timer-circle" id="timer">50</div>
+</div>
 
 <div id="selectionBoard" class="grid"></div>
 
-<div id="gameSection" class="my-card">
-    <h3>የእርስዎ ካርቴላ</h3>
-    <div id="myCardGrid" class="small-grid"></div>
+<div id="gameSection" class="my-card-section">
+    <div class="card-table">
+        <h3 style="margin-top:0; color: var(--primary);">የእርስዎ ካርቴላ</h3>
+        <div id="myCardGrid" class="card-grid"></div>
+    </div>
 </div>
 
 <script>
@@ -46,7 +66,6 @@
     const audioBtn = document.getElementById('audioBtn');
     let timeLeft = 50;
 
-    // ሰንጠረዡን መገንባት (1-75)
     for (let i = 1; i <= 75; i++) {
         const cell = document.createElement('div');
         cell.className = 'cell';
@@ -54,13 +73,12 @@
         cell.onclick = () => {
             if (timeLeft > 0 && selectedNumbers.length < 15 && !selectedNumbers.includes(i)) {
                 selectedNumbers.push(i);
-                cell.classList.add('selected'); // ቀይ ምልክት
+                cell.classList.add('selected');
             }
         };
         board.appendChild(cell);
     }
 
-    // የ 50 ሰከንድ ቆጣሪ
     const countdown = setInterval(() => {
         timeLeft--;
         timerEl.innerText = timeLeft;
@@ -72,10 +90,9 @@
 
     function startBingoGame() {
         board.style.display = 'none';
-        timerEl.style.display = 'none';
+        timerEl.parentElement.style.display = 'none';
         gameSection.style.display = 'block';
         
-        // የግል ካርቴላን ማሳየት
         const myCardGrid = document.getElementById('myCardGrid');
         selectedNumbers.sort((a,b) => a-b).forEach(num => {
             const cell = document.createElement('div');
@@ -85,29 +102,23 @@
             myCardGrid.appendChild(cell);
         });
 
-        // በየ 4 ሰከንዱ ቁጥር መጥራት
         let calledNumbers = [];
         const gameInterval = setInterval(() => {
             let nextNum = Math.floor(Math.random() * 75) + 1;
             while(calledNumbers.includes(nextNum)) nextNum = Math.floor(Math.random() * 75) + 1;
             calledNumbers.push(nextNum);
-            
             audioBtn.innerText = `🔊 Listen: B-${nextNum}`;
-            
-            // አውቶማቲክ ምልክት (አረንጓዴ)
             if (selectedNumbers.includes(nextNum)) {
                 document.getElementById('num-' + nextNum).classList.add('matched');
+                document.getElementById('num-' + nextNum).style.background = '#4caf50';
+                document.getElementById('num-' + nextNum).style.color = 'white';
             }
-
-            // አሸናፊ መለየት (15ቱም ሲሞሉ)
-            const matchedCount = document.querySelectorAll('.small-cell.matched').length;
-            if (matchedCount === 15) {
+            if (document.querySelectorAll('.small-cell[style*="background: rgb(76, 175, 80)"]').length === 15) {
                 clearInterval(gameInterval);
-                alert("BINGO! እንኳን ደስ አለዎት!");
+                alert("BINGO!");
             }
         }, 4000);
     }
 </script>
-
 </body>
 </html>
