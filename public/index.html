@@ -17,7 +17,7 @@
 
         /* Menu Grid */
         .menu-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 20px; margin-top: -20px; }
-        .menu-card { background: var(--white); padding: 20px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); text-align: center; cursor: pointer; transition: 0.3s; border: none; }
+        .menu-card { background: var(--white); padding: 20px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); text-align: center; cursor: pointer; transition: 0.3s; border: none; width: 100%; display: block; }
         .menu-card:active { transform: scale(0.95); }
         .menu-card i { font-size: 1.8rem; margin-bottom: 10px; display: block; }
         
@@ -44,17 +44,17 @@
 </div>
 
 <div class="menu-container">
-    <button class="menu-card start-btn" onclick="alert('ጨዋታው በመጀመር ላይ...')">
+    <button class="menu-card start-btn" onclick="window.location.href='game.html'">
         <i class="fas fa-play-circle"></i>
         <span>ጨዋታ ጀምር (Start Game)</span>
     </button>
 
-    <button class="menu-card" onclick="alert('ገንዘብ ማስገቢያ ገጽ')">
+    <button class="menu-card" onclick="alert('ገንዘብ ማስገቢያ ገጽ ገና አልተገናኘም')">
         <i class="fas fa-plus-circle deposit-icon"></i>
         <span>ገንዘብ አስገባ (Deposit)</span>
     </button>
 
-    <button class="menu-card" onclick="alert('ገንዘብ ማውጫ ገጽ')">
+    <button class="menu-card" onclick="alert('ገንዘብ ማውጫ ገጽ ገና አልተገናኘም')">
         <i class="fas fa-money-bill-wave withdraw-icon"></i>
         <span>ገንዘብ አውጣ (Withdraw)</span>
     </button>
@@ -64,7 +64,7 @@
         <span>ጓደኛ ጋብዝ (Invite)</span>
     </button>
 
-    <button class="menu-card" onclick="alert('የጨዋታ ታሪክ')">
+    <button class="menu-card" onclick="alert('የጨዋታ ታሪክ ገና አልተመዘገበም')">
         <i class="fas fa-history history-icon"></i>
         <span>ታሪክ (History)</span>
     </button>
