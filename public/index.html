@@ -4,60 +4,77 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Arif Bingo Business</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --primary: #0d47a1; --gold: #ffd700; --bg: #f4f7f6; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); margin: 0; text-align: center; }
+        :root { --primary: #1a237e; --gold: #ffd700; --white: #ffffff; --bg: #f0f2f5; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); margin: 0; padding: 0; }
         
-        /* User Profile Header */
-        .user-header { background: var(--primary); color: white; padding: 20px; border-radius: 0 0 25px 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-        .balance-card { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 15px; margin-top: 10px; }
-        .balance-amount { font-size: 1.8rem; font-weight: bold; color: var(--gold); }
+        /* Profile Section */
+        .profile-header { background: var(--primary); color: var(--white); padding: 30px 20px; border-radius: 0 0 30px 30px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .balance-box { background: rgba(255, 255, 255, 0.15); padding: 15px; border-radius: 15px; margin-top: 15px; border: 1px solid rgba(255,255,255,0.2); }
+        .balance-label { font-size: 0.9rem; opacity: 0.9; }
+        .balance-amount { font-size: 2rem; font-weight: bold; color: var(--gold); margin-top: 5px; }
 
-        /* Main Buttons Grid */
-        .menu-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 20px; }
-        .menu-item { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-decoration: none; color: #333; font-weight: bold; display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: 0.3s; }
-        .menu-item:active { transform: scale(0.95); }
-        .menu-item i { font-size: 1.5rem; margin-bottom: 8px; }
+        /* Menu Grid */
+        .menu-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 20px; margin-top: -20px; }
+        .menu-card { background: var(--white); padding: 20px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); text-align: center; cursor: pointer; transition: 0.3s; border: none; }
+        .menu-card:active { transform: scale(0.95); }
+        .menu-card i { font-size: 1.8rem; margin-bottom: 10px; display: block; }
         
-        .start-btn { grid-column: span 2; background: linear-gradient(45deg, #1b5e20, #4caf50); color: white; font-size: 1.2rem; }
-        .deposit-btn { color: #1a237e; }
-        .invite-btn { color: #e91e63; }
+        /* Specialized Buttons */
+        .start-btn { grid-column: span 2; background: linear-gradient(135deg, #2e7d32, #4caf50); color: white; padding: 25px; }
+        .deposit-icon { color: #1565c0; }
+        .withdraw-icon { color: #fbc02d; }
+        .invite-icon { color: #e91e63; }
+        .history-icon { color: #7b1fa2; }
 
-        /* Stats Panel */
-        .admin-stats { background: white; margin: 0 20px; padding: 15px; border-radius: 12px; display: flex; justify-content: space-around; font-size: 0.8rem; border: 1px solid #ddd; }
+        /* Bottom Stats */
+        .bottom-bar { background: white; margin: 10px 20px; padding: 15px; border-radius: 15px; display: flex; justify-content: space-around; font-size: 0.8rem; color: #666; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .stat-item b { color: var(--primary); display: block; font-size: 1rem; }
     </style>
 </head>
 <body>
 
-<div class="user-header">
-    <h3>እንኳን ደህና መጡ!</h3>
-    <div class="balance-card">
-        <span>ያለዎት ሂሳብ (Balance)</span>
+<div class="profile-header">
+    <div style="font-size: 1.2rem;">እንኳን ደህና መጡ፣ <b>አድሚን</b></div>
+    <div class="balance-box">
+        <div class="balance-label"><i class="fas fa-wallet"></i> ያሎት ሂሳብ (Balance)</div>
         <div class="balance-amount">1,250.00 ETB</div>
     </div>
 </div>
 
-<div class="menu-grid">
-    <button class="menu-item start-btn" onclick="openGame()">🎮 ጨዋታ ጀምር (Start)</button>
-    <div class="menu-item deposit-btn" onclick="alert('Deposit Page Loading...')">💰 ብር አስገባ (Deposit)</div>
-    <div class="menu-item" onclick="alert('Withdraw Page Loading...')">💸 ብር አውጣ (Withdraw)</div>
-    <div class="menu-item invite-btn" onclick="alert('Invite Link Copied!')">👥 ጓደኛ ይጋብዙ (Invite)</div>
-    <div class="menu-item" onclick="alert('History Loading...')">📜 ታሪክ (History)</div>
+<div class="menu-container">
+    <button class="menu-card start-btn" onclick="alert('ጨዋታው በመጀመር ላይ...')">
+        <i class="fas fa-play-circle"></i>
+        <span>ጨዋታ ጀምር (Start Game)</span>
+    </button>
+
+    <button class="menu-card" onclick="alert('ገንዘብ ማስገቢያ ገጽ')">
+        <i class="fas fa-plus-circle deposit-icon"></i>
+        <span>ገንዘብ አስገባ (Deposit)</span>
+    </button>
+
+    <button class="menu-card" onclick="alert('ገንዘብ ማውጫ ገጽ')">
+        <i class="fas fa-money-bill-wave withdraw-icon"></i>
+        <span>ገንዘብ አውጣ (Withdraw)</span>
+    </button>
+
+    <button class="menu-card" onclick="alert('የግብዣ ሊንክ ኮፒ ተደርጓል!')">
+        <i class="fas fa-user-plus invite-icon"></i>
+        <span>ጓደኛ ጋብዝ (Invite)</span>
+    </button>
+
+    <button class="menu-card" onclick="alert('የጨዋታ ታሪክ')">
+        <i class="fas fa-history history-icon"></i>
+        <span>ታሪክ (History)</span>
+    </button>
 </div>
 
-<div class="admin-stats">
-    <div>የጨዋታ ቁጥር: <b>#8543</b></div>
-    <div>ተጫዋቾች: <b>24</b></div>
-    <div>ኮሚሽን: <b>10%</b></div>
+<div class="bottom-bar">
+    <div class="stat-item">Game ID <b>#8543</b></div>
+    <div class="stat-item">ተጫዋቾች <b>24</b></div>
+    <div class="stat-item">ኮሚሽን <b>10%</b></div>
 </div>
-
-<script>
-    function openGame() {
-        // ወደ ቢንጎ ሰንጠረዡ የሚወስድ ተግባር
-        window.location.href = 'game.html'; 
-    }
-</script>
 
 </body>
 </html>
-
