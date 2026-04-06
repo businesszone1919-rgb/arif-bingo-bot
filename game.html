@@ -3,22 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arif Bingo - Playing</title>
+    <title>Arif Bingo - Game</title>
     <style>
         :root { --primary: #1a237e; --accent: #d32f2f; }
         body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; margin: 0; text-align: center; }
         .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); background: #fff; padding: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .stat { font-size: 0.7rem; color: #666; }
-        .stat b { display: block; color: var(--primary); font-size: 0.8rem; }
-        .timer-box { font-size: 2rem; color: var(--accent); font-weight: bold; margin: 15px 0; }
+        .stat b { display: block; color: var(--primary); font-size: 0.9rem; }
+        .timer-box { font-size: 2.5rem; color: var(--accent); font-weight: bold; margin: 20px 0; border: 3px solid var(--accent); display: inline-block; padding: 10px 20px; border-radius: 50%; }
         .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; padding: 15px; max-width: 380px; margin: 0 auto; }
         .cell { aspect-ratio: 1; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid #ddd; cursor: pointer; }
         .cell.selected { background: var(--accent); color: white; border-color: var(--accent); }
-        .cell.matched { background: #4caf50; color: white; border-color: #4caf50; }
+        .cell.matched { background: #4caf50 !important; color: white !important; }
         .my-card { display: none; padding: 15px; }
-        .card-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .small-cell { padding: 8px; border: 1px solid #eee; font-size: 0.9rem; font-weight: bold; border-radius: 5px; }
-        .audio-btn { background: #ffd700; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; margin-bottom: 10px; }
+        .card-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .small-cell { padding: 10px; border: 1px solid #eee; font-size: 1rem; font-weight: bold; border-radius: 5px; background: #fff; }
+        .audio-btn { background: #ffd700; border: none; padding: 12px 25px; border-radius: 20px; font-weight: bold; margin-bottom: 15px; cursor: pointer; font-size: 1.1rem; }
     </style>
 </head>
 <body>
@@ -32,19 +31,21 @@
 
 <div id="setupMode">
     <div class="timer-box" id="timer">50</div>
-    <p>15 ቁጥሮችን ይምረጡ</p>
+    <p style="font-weight: bold;">15 ቁጥሮችን ይምረጡ</p>
     <div id="board" class="grid"></div>
 </div>
 
 <div id="playMode" class="my-card">
     <button class="audio-btn" id="audioBtn">🔊 Listen: Wait...</button>
-    <h3>የእርስዎ ካርቴላ</h3>
+    <h3 style="color: var(--primary);">የእርስዎ ካርቴላ</h3>
     <div id="myCardGrid" class="card-grid"></div>
 </div>
 
 <script>
     let selected = [];
     const board = document.getElementById('board');
+    
+    // ሰንጠረዡን መፍጠር
     for (let i = 1; i <= 75; i++) {
         const cell = document.createElement('div');
         cell.className = 'cell';
@@ -53,17 +54,28 @@
             if (selected.length < 15 && !selected.includes(i)) {
                 selected.push(i);
                 cell.classList.add('selected');
+            } else if (selected.includes(i)) {
+                selected = selected.filter(n => n !== i);
+                cell.classList.remove('selected');
             }
         };
         board.appendChild(cell);
     }
 
+    // ቆጣሪው
     let timeLeft = 50;
     const timerInterval = setInterval(() => {
         timeLeft--;
         document.getElementById('timer').innerText = timeLeft;
         if (timeLeft <= 0) {
             clearInterval(timerInterval);
+            if(selected.length < 15) {
+                // 15 ካልመረጠ በራሱ ይሙላለት
+                while(selected.length < 15) {
+                    let r = Math.floor(Math.random() * 75) + 1;
+                    if(!selected.includes(r)) selected.push(r);
+                }
+            }
             startPlay();
         }
     }, 1000);
@@ -72,24 +84,32 @@
         document.getElementById('setupMode').style.display = 'none';
         document.getElementById('playMode').style.display = 'block';
         const myGrid = document.getElementById('myCardGrid');
+        
         selected.sort((a,b) => a-b).forEach(n => {
             const c = document.createElement('div');
             c.className = 'small-cell';
-            c.id = 'n-' + n;
+            c.id = 'num-' + n;
             c.innerText = n;
             myGrid.appendChild(c);
         });
 
         let called = [];
-        setInterval(() => {
-            let n; do { n = Math.floor(Math.random()*75)+1; } while(called.includes(n));
-            called.push(n);
-            document.getElementById('audioBtn').innerText = `🔊 Listen: B-${n}`;
-            if (selected.includes(n)) {
-                const el = document.getElementById('n-'+n);
+        const gameLoop = setInterval(() => {
+            let next;
+            do { next = Math.floor(Math.random() * 75) + 1; } while(called.includes(next));
+            called.push(next);
+            
+            document.getElementById('audioBtn').innerText = `🔊 Listen: B-${next}`;
+            
+            // ምልክት ማድረግ
+            if (selected.includes(next)) {
+                const el = document.getElementById('num-' + next);
                 el.classList.add('matched');
-                el.style.background = '#4caf50';
-                el.style.color = 'white';
+            }
+
+            if (called.length >= 75 || document.querySelectorAll('.matched').length === 15) {
+                clearInterval(gameLoop);
+                if(document.querySelectorAll('.matched').length === 15) alert("BINGO! አሸንፈዋል!");
             }
         }, 4000);
     }
