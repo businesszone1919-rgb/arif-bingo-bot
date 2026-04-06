@@ -3,44 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arif Bingo</title>
+    <title>Arif Bingo Bot</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; background-color: #f0f2f5; margin: 0; padding: 20px; }
-        h1 { color: #1a73e8; }
-        .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; max-width: 350px; margin: 20px auto; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .cell { width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; background-color: #e8f0fe; border: 2px solid #1a73e8; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 1.2rem; }
-        .cell.marked { background-color: #34a853; color: white; border-color: #2d8e47; }
-        .cell:hover { transform: scale(1.05); }
-        button { padding: 12px 25px; font-size: 1rem; background-color: #1a73e8; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 20px; }
-        button:hover { background-color: #1557b0; }
+        body { font-family: 'Arial', sans-serif; background-color: #f4f4f9; text-align: center; margin: 0; padding: 10px; }
+        .info-panel { background: white; padding: 10px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); display: flex; justify-content: space-around; font-weight: bold; margin-bottom: 15px; font-size: 0.9rem; }
+        .info-item span { color: #d32f2f; display: block; }
+        .timer { font-size: 1.5rem; color: #d32f2f; font-weight: bold; margin: 10px 0; }
+        .audio-btn { background: #ff9800; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
+        .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; max-width: 350px; margin: 0 auto; }
+        .cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; background: #fff; border: 1px solid #ccc; font-weight: bold; cursor: pointer; border-radius: 5px; font-size: 1.1rem; }
+        .cell.selected { background-color: #f44336; color: white; } /* ቀይ ምልክት */
+        .cell.matched { background-color: #4caf50; color: white; } /* አረንጓዴ ምልክት */
+        .my-card { display: none; margin-top: 20px; }
+        .small-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; max-width: 250px; margin: 10px auto; }
+        .small-cell { padding: 5px; border: 1px solid #333; font-size: 0.8rem; background: white; }
     </style>
 </head>
 <body>
 
-    <h1>🎰 Arif Bingo 🎰</h1>
-    <div id="bingo-grid" class="grid"></div>
-    <button onclick="generateNewGame()">አዲስ ጨዋታ ጀምር</button>
+<div class="info-panel">
+    <div class="info-item">Game ID <span id="gameId">#8543</span></div>
+    <div class="info-item">Players <span id="playerCount">12</span></div>
+    <div class="info-item">Derash <span id="prize">500 ETB</span></div>
+    <div class="info-item">Comm <span id="comm">10%</span></div>
+</div>
 
-    <script>
-        function generateNewGame() {
-            const grid = document.getElementById('bingo-grid');
-            grid.innerHTML = '';
-            let numbers = Array.from({length: 75}, (_, i) => i + 1).sort(() => Math.random() - 0.5).slice(0, 25);
-            
-            numbers.forEach((num, index) => {
-                const cell = document.createElement('div');
-                cell.className = 'cell';
-                if (index === 12) {
-                    cell.innerText = 'FREE';
-                    cell.classList.add('marked');
-                } else {
-                    cell.innerText = num;
-                    cell.onclick = () => cell.classList.toggle('marked');
-                }
-                grid.appendChild(cell);
-            });
+<button class="audio-btn" id="audioBtn">🔊 Listen: Wait...</button>
+<div class="timer" id="timer">50</div>
+
+<div id="selectionBoard" class="grid"></div>
+
+<div id="gameSection" class="my-card">
+    <h3>የእርስዎ ካርቴላ</h3>
+    <div id="myCardGrid" class="small-grid"></div>
+</div>
+
+<script>
+    let selectedNumbers = [];
+    const timerEl = document.getElementById('timer');
+    const board = document.getElementById('selectionBoard');
+    const gameSection = document.getElementById('gameSection');
+    const audioBtn = document.getElementById('audioBtn');
+    let timeLeft = 50;
+
+    // ሰንጠረዡን መገንባት (1-75)
+    for (let i = 1; i <= 75; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.innerText = i;
+        cell.onclick = () => {
+            if (timeLeft > 0 && selectedNumbers.length < 15 && !selectedNumbers.includes(i)) {
+                selectedNumbers.push(i);
+                cell.classList.add('selected'); // ቀይ ምልክት
+            }
+        };
+        board.appendChild(cell);
+    }
+
+    // የ 50 ሰከንድ ቆጣሪ
+    const countdown = setInterval(() => {
+        timeLeft--;
+        timerEl.innerText = timeLeft;
+        if (timeLeft <= 0) {
+            clearInterval(countdown);
+            startBingoGame();
         }
-        generateNewGame();
-    </script>
+    }, 1000);
+
+    function startBingoGame() {
+        board.style.display = 'none';
+        timerEl.style.display = 'none';
+        gameSection.style.display = 'block';
+        
+        // የግል ካርቴላን ማሳየት
+        const myCardGrid = document.getElementById('myCardGrid');
+        selectedNumbers.sort((a,b) => a-b).forEach(num => {
+            const cell = document.createElement('div');
+            cell.className = 'small-cell';
+            cell.id = 'num-' + num;
+            cell.innerText = num;
+            myCardGrid.appendChild(cell);
+        });
+
+        // በየ 4 ሰከንዱ ቁጥር መጥራት
+        let calledNumbers = [];
+        const gameInterval = setInterval(() => {
+            let nextNum = Math.floor(Math.random() * 75) + 1;
+            while(calledNumbers.includes(nextNum)) nextNum = Math.floor(Math.random() * 75) + 1;
+            calledNumbers.push(nextNum);
+            
+            audioBtn.innerText = `🔊 Listen: B-${nextNum}`;
+            
+            // አውቶማቲክ ምልክት (አረንጓዴ)
+            if (selectedNumbers.includes(nextNum)) {
+                document.getElementById('num-' + nextNum).classList.add('matched');
+            }
+
+            // አሸናፊ መለየት (15ቱም ሲሞሉ)
+            const matchedCount = document.querySelectorAll('.small-cell.matched').length;
+            if (matchedCount === 15) {
+                clearInterval(gameInterval);
+                alert("BINGO! እንኳን ደስ አለዎት!");
+            }
+        }, 4000);
+    }
+</script>
+
 </body>
 </html>
