@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bingo Admin Panel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --admin-bg: #263238; --primary: #00e676; --white: #ffffff; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--admin-bg); color: var(--white); margin: 0; padding: 20px; }
+        .header { border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin-bottom: 20px; }
+        .card { background: #37474f; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        h2 { color: var(--primary); font-size: 1.2rem; margin-top: 0; }
+        input, button { width: 100%; padding: 12px; margin-top: 10px; border-radius: 8px; border: none; font-size: 1rem; }
+        input { background: #455a64; color: white; box-sizing: border-box; }
+        button { background: var(--primary); color: #121212; font-weight: bold; cursor: pointer; }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .stat-item { background: #455a64; padding: 15px; border-radius: 8px; text-align: center; }
+        .stat-item span { font-size: 0.8rem; display: block; opacity: 0.7; }
+        .stat-item b { font-size: 1.1rem; color: var(--primary); }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1><i class="fas fa-user-shield"></i> Admin Dashboard</h1>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-item"><span>Total Users</span><b>124</b></div>
+    <div class="stat-item"><span>Today's Profit</span><b>4,200 ETB</b></div>
+</div>
+
+<div class="card">
+    <h2><i class="fas fa-coins"></i> Deposit (ብር ለመሙላት)</h2>
+    <input type="text" id="userId" placeholder="የተጫዋች ID (Telegram ID)">
+    <input type="number" id="amount" placeholder="የብር መጠን">
+    <button onclick="alert('ሂሳብ ተሞልቷል!')">Add Balance</button>
+</div>
+
+<div class="card">
+    <h2><i class="fas fa-gamepad"></i> Game Settings</h2>
+    <button style="background: #ff5252;" onclick="alert('ጨዋታው ቆሟል!')">Stop Current Game</button>
+    <button style="background: #2979ff; margin-top: 10px;" onclick="alert('አዲስ Game ID ተፈጠረ!')">Reset Game ID</button>
+</div>
+
+<div class="card">
+    <h2><i class="fas fa-list"></i> Pending Withdrawals</h2>
+    <p style="font-size: 0.8rem; opacity: 0.6;">ምንም የጥበቃ ጥያቄ የለም።</p>
+</div>
+
+</body>
+</html>
