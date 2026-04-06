@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arif Bingo - Playing</title>
+    <style>
+        :root { --primary: #1a237e; --accent: #d32f2f; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; margin: 0; text-align: center; }
+        .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); background: #fff; padding: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .stat { font-size: 0.7rem; color: #666; }
+        .stat b { display: block; color: var(--primary); font-size: 0.8rem; }
+        .timer-box { font-size: 2rem; color: var(--accent); font-weight: bold; margin: 15px 0; }
+        .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; padding: 15px; max-width: 380px; margin: 0 auto; }
+        .cell { aspect-ratio: 1; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid #ddd; cursor: pointer; }
+        .cell.selected { background: var(--accent); color: white; border-color: var(--accent); }
+        .cell.matched { background: #4caf50; color: white; border-color: #4caf50; }
+        .my-card { display: none; padding: 15px; }
+        .card-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .small-cell { padding: 8px; border: 1px solid #eee; font-size: 0.9rem; font-weight: bold; border-radius: 5px; }
+        .audio-btn { background: #ffd700; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="stats-bar">
+    <div class="stat">Game ID <b>#8543</b></div>
+    <div class="stat">Players <b>24</b></div>
+    <div class="stat">Derash <b>500</b></div>
+    <div class="stat">Comm <b>10%</b></div>
+</div>
+
+<div id="setupMode">
+    <div class="timer-box" id="timer">50</div>
+    <p>15 ቁጥሮችን ይምረጡ</p>
+    <div id="board" class="grid"></div>
+</div>
+
+<div id="playMode" class="my-card">
+    <button class="audio-btn" id="audioBtn">🔊 Listen: Wait...</button>
+    <h3>የእርስዎ ካርቴላ</h3>
+    <div id="myCardGrid" class="card-grid"></div>
+</div>
+
+<script>
+    let selected = [];
+    const board = document.getElementById('board');
+    for (let i = 1; i <= 75; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.innerText = i;
+        cell.onclick = () => {
+            if (selected.length < 15 && !selected.includes(i)) {
+                selected.push(i);
+                cell.classList.add('selected');
+            }
+        };
+        board.appendChild(cell);
+    }
+
+    let timeLeft = 50;
+    const timerInterval = setInterval(() => {
+        timeLeft--;
+        document.getElementById('timer').innerText = timeLeft;
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            startPlay();
+        }
+    }, 1000);
+
+    function startPlay() {
+        document.getElementById('setupMode').style.display = 'none';
+        document.getElementById('playMode').style.display = 'block';
+        const myGrid = document.getElementById('myCardGrid');
+        selected.sort((a,b) => a-b).forEach(n => {
+            const c = document.createElement('div');
+            c.className = 'small-cell';
+            c.id = 'n-' + n;
+            c.innerText = n;
+            myGrid.appendChild(c);
+        });
+
+        let called = [];
+        setInterval(() => {
+            let n; do { n = Math.floor(Math.random()*75)+1; } while(called.includes(n));
+            called.push(n);
+            document.getElementById('audioBtn').innerText = `🔊 Listen: B-${n}`;
+            if (selected.includes(n)) {
+                const el = document.getElementById('n-'+n);
+                el.classList.add('matched');
+                el.style.background = '#4caf50';
+                el.style.color = 'white';
+            }
+        }, 4000);
+    }
+</script>
+</body>
+</html>
