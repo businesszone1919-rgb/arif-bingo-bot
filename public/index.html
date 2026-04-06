@@ -3,122 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arif Bingo Bot</title>
+    <title>Arif Bingo Business</title>
     <style>
-        :root { --primary: #1a237e; --secondary: #fbc02d; --accent: #d32f2f; --bg: #f0f2f5; }
-        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg); margin: 0; padding: 0; color: #333; }
+        :root { --primary: #0d47a1; --gold: #ffd700; --bg: #f4f7f6; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); margin: 0; text-align: center; }
         
-        .header { background: var(--primary); color: white; padding: 15px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
-        .header h1 { margin: 0; font-size: 1.5rem; letter-spacing: 2px; }
+        /* User Profile Header */
+        .user-header { background: var(--primary); color: white; padding: 20px; border-radius: 0 0 25px 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .balance-card { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 15px; margin-top: 10px; }
+        .balance-amount { font-size: 1.8rem; font-weight: bold; color: var(--gold); }
 
-        .stats-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 15px; background: #fff; margin-bottom: 10px; }
-        .stat-box { background: #f8f9fa; padding: 8px; border-radius: 8px; border: 1px solid #dee2e6; text-align: center; }
-        .stat-label { font-size: 0.7rem; color: #666; text-transform: uppercase; display: block; }
-        .stat-value { font-size: 0.9rem; font-weight: bold; color: var(--primary); }
+        /* Main Buttons Grid */
+        .menu-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 20px; }
+        .menu-item { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-decoration: none; color: #333; font-weight: bold; display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: 0.3s; }
+        .menu-item:active { transform: scale(0.95); }
+        .menu-item i { font-size: 1.5rem; margin-bottom: 8px; }
+        
+        .start-btn { grid-column: span 2; background: linear-gradient(45deg, #1b5e20, #4caf50); color: white; font-size: 1.2rem; }
+        .deposit-btn { color: #1a237e; }
+        .invite-btn { color: #e91e63; }
 
-        .game-info { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; }
-        .timer-circle { width: 50px; height: 50px; border-radius: 50%; border: 4px solid var(--accent); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; background: white; }
-        .audio-pill { background: var(--secondary); border: none; padding: 8px 20px; border-radius: 20px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-
-        .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 15px; max-width: 400px; margin: 0 auto; }
-        .cell { aspect-ratio: 1; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1rem; border: 2px solid #e0e0e0; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .cell.selected { background: var(--accent); color: white; border-color: var(--accent); transform: scale(1.1); }
-        .cell.matched { background: #4caf50; color: white; border-color: #4caf50; }
-
-        .my-card-section { display: none; padding: 20px; }
-        .card-table { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-top: 10px; }
-        .card-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
-        .small-cell { padding: 10px 5px; border: 1px solid #eee; border-radius: 4px; font-size: 0.85rem; font-weight: bold; }
+        /* Stats Panel */
+        .admin-stats { background: white; margin: 0 20px; padding: 15px; border-radius: 12px; display: flex; justify-content: space-around; font-size: 0.8rem; border: 1px solid #ddd; }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <h1>🎰 ARIF BINGO 🎰</h1>
-</div>
-
-<div class="stats-container">
-    <div class="stat-box"><span class="stat-label">Game ID</span><span class="stat-value">#8543</span></div>
-    <div class="stat-box"><span class="stat-label">Players</span><span class="stat-value">12</span></div>
-    <div class="stat-box"><span class="stat-label">Derash</span><span class="stat-value">500 ETB</span></div>
-    <div class="stat-box"><span class="stat-label">Comm</span><span class="stat-value">10%</span></div>
-</div>
-
-<div class="game-info">
-    <button class="audio-pill" id="audioBtn">🔊 Listen: B-15</button>
-    <div class="timer-circle" id="timer">50</div>
-</div>
-
-<div id="selectionBoard" class="grid"></div>
-
-<div id="gameSection" class="my-card-section">
-    <div class="card-table">
-        <h3 style="margin-top:0; color: var(--primary);">የእርስዎ ካርቴላ</h3>
-        <div id="myCardGrid" class="card-grid"></div>
+<div class="user-header">
+    <h3>እንኳን ደህና መጡ!</h3>
+    <div class="balance-card">
+        <span>ያለዎት ሂሳብ (Balance)</span>
+        <div class="balance-amount">1,250.00 ETB</div>
     </div>
 </div>
 
+<div class="menu-grid">
+    <button class="menu-item start-btn" onclick="openGame()">🎮 ጨዋታ ጀምር (Start)</button>
+    <div class="menu-item deposit-btn" onclick="alert('Deposit Page Loading...')">💰 ብር አስገባ (Deposit)</div>
+    <div class="menu-item" onclick="alert('Withdraw Page Loading...')">💸 ብር አውጣ (Withdraw)</div>
+    <div class="menu-item invite-btn" onclick="alert('Invite Link Copied!')">👥 ጓደኛ ይጋብዙ (Invite)</div>
+    <div class="menu-item" onclick="alert('History Loading...')">📜 ታሪክ (History)</div>
+</div>
+
+<div class="admin-stats">
+    <div>የጨዋታ ቁጥር: <b>#8543</b></div>
+    <div>ተጫዋቾች: <b>24</b></div>
+    <div>ኮሚሽን: <b>10%</b></div>
+</div>
+
 <script>
-    let selectedNumbers = [];
-    const timerEl = document.getElementById('timer');
-    const board = document.getElementById('selectionBoard');
-    const gameSection = document.getElementById('gameSection');
-    const audioBtn = document.getElementById('audioBtn');
-    let timeLeft = 50;
-
-    for (let i = 1; i <= 75; i++) {
-        const cell = document.createElement('div');
-        cell.className = 'cell';
-        cell.innerText = i;
-        cell.onclick = () => {
-            if (timeLeft > 0 && selectedNumbers.length < 15 && !selectedNumbers.includes(i)) {
-                selectedNumbers.push(i);
-                cell.classList.add('selected');
-            }
-        };
-        board.appendChild(cell);
-    }
-
-    const countdown = setInterval(() => {
-        timeLeft--;
-        timerEl.innerText = timeLeft;
-        if (timeLeft <= 0) {
-            clearInterval(countdown);
-            startBingoGame();
-        }
-    }, 1000);
-
-    function startBingoGame() {
-        board.style.display = 'none';
-        timerEl.parentElement.style.display = 'none';
-        gameSection.style.display = 'block';
-        
-        const myCardGrid = document.getElementById('myCardGrid');
-        selectedNumbers.sort((a,b) => a-b).forEach(num => {
-            const cell = document.createElement('div');
-            cell.className = 'small-cell';
-            cell.id = 'num-' + num;
-            cell.innerText = num;
-            myCardGrid.appendChild(cell);
-        });
-
-        let calledNumbers = [];
-        const gameInterval = setInterval(() => {
-            let nextNum = Math.floor(Math.random() * 75) + 1;
-            while(calledNumbers.includes(nextNum)) nextNum = Math.floor(Math.random() * 75) + 1;
-            calledNumbers.push(nextNum);
-            audioBtn.innerText = `🔊 Listen: B-${nextNum}`;
-            if (selectedNumbers.includes(nextNum)) {
-                document.getElementById('num-' + nextNum).classList.add('matched');
-                document.getElementById('num-' + nextNum).style.background = '#4caf50';
-                document.getElementById('num-' + nextNum).style.color = 'white';
-            }
-            if (document.querySelectorAll('.small-cell[style*="background: rgb(76, 175, 80)"]').length === 15) {
-                clearInterval(gameInterval);
-                alert("BINGO!");
-            }
-        }, 4000);
+    function openGame() {
+        // ወደ ቢንጎ ሰንጠረዡ የሚወስድ ተግባር
+        window.location.href = 'game.html'; 
     }
 </script>
+
 </body>
 </html>
+
