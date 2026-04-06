@@ -6,43 +6,24 @@
     <title>Arif Bingo Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --primary: #1a237e; --gold: #ffd700; --white: #ffffff; --bg: #f0f2f5; }
-        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); margin: 0; padding: 0; }
-        .profile-header { background: var(--primary); color: var(--white); padding: 30px 20px; border-radius: 0 0 30px 30px; text-align: center; }
-        .balance-box { background: rgba(255, 255, 255, 0.15); padding: 15px; border-radius: 15px; margin-top: 15px; border: 1px solid rgba(255,255,255,0.2); }
-        .balance-amount { font-size: 2rem; font-weight: bold; color: var(--gold); }
-        .menu-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 20px; margin-top: -20px; }
-        .menu-card { background: var(--white); padding: 20px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); text-align: center; cursor: pointer; border: none; }
-        .start-btn { grid-column: span 2; background: linear-gradient(135deg, #2e7d32, #4caf50); color: white; padding: 25px; font-weight: bold; font-size: 1.1rem; }
-        .menu-card i { font-size: 1.8rem; margin-bottom: 10px; display: block; }
+        :root { --primary: #1a237e; --gold: #ffd700; --white: #ffffff; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; text-align: center; }
+        .header { background: var(--primary); color: white; padding: 40px 20px; border-radius: 0 0 25px 25px; }
+        .balance-card { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; margin-top: 10px; }
+        .amount { font-size: 2.2rem; color: var(--gold); font-weight: bold; }
+        .play-btn { background: #4caf50; color: white; border: none; padding: 20px; width: 90%; border-radius: 15px; font-size: 1.2rem; font-weight: bold; margin-top: 20px; cursor: pointer; }
     </style>
 </head>
 <body>
-
-<div class="profile-header">
-    <div style="font-size: 1.2rem;">እንኳን ደህና መጡ!</div>
-    <div class="balance-box">
-        <div><i class="fas fa-wallet"></i> ያሎት ሂሳብ</div>
-        <div class="balance-amount">1,250.00 ETB</div>
+    <div class="header">
+        <h2>እንኳን ደህና መጡ!</h2>
+        <div class="balance-card">
+            <div>ያሎት ሂሳብ</div>
+            <div class="amount">1,250.00 ETB</div>
+        </div>
     </div>
-</div>
-
-<div class="menu-container">
-    <button class="menu-card start-btn" onclick="window.location.href='game.html'">
-        <i class="fas fa-play-circle"></i>
-        <span>ጨዋታ ጀምር (Start Game)</span>
+    <button class="play-btn" onclick="window.location.href='game.html'">
+        <i class="fas fa-play"></i> ጨዋታ ጀምር (Start Game)
     </button>
-
-    <button class="menu-card" onclick="alert('ገንዘብ ለማስገባት አድሚኑን ያነጋግሩ')">
-        <i class="fas fa-plus-circle" style="color: #1565c0;"></i>
-        <span>Deposit</span>
-    </button>
-
-    <button class="menu-card" onclick="alert('ገንዘብ ለማውጣት አድሚኑን ያነጋግሩ')">
-        <i class="fas fa-money-bill-wave" style="color: #fbc02d;"></i>
-        <span>Withdraw</span>
-    </button>
-</div>
-
 </body>
 </html>
