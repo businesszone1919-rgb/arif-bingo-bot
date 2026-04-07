@@ -3,30 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arif Bingo Live</title>
+    <title>Beteseb Style Bingo</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-
     <div class="header">
-        <h2>አሪፍ ቢንጎ እንኳን ደህና መጡ!</h2>
-        <div class="stat-box">
-            <div>የኪስ ቦርሳ (Wallet)</div>
-            <div id="balance">1,250.00 ETB</div>
+        <h2 style="color: #eab308;">ቤተሰብ ቢንጎ</h2>
+        <div style="font-size: 0.9rem;">Wallet: <span id="balance">0.00 ETB</span></div>
+    </div>
+
+    <div id="msg" style="margin-bottom: 10px; font-weight: bold;">15 ቁጥሮችን ይምረጡ</div>
+    
+    <div class="grid-75" id="board75">
         </div>
-    </div>
-
-    <div class="grid-container">
-        <div id="msg">እባክዎ 15 ቁጥሮችን ይምረጡ</div>
-        <div class="grid-75" id="board75"></div>
-    </div>
-
-    <div class="footer-actions">
-        <button class="play-btn" onclick="window.location.href='game.html'">
-            <i class="fas fa-play"></i> ጨዋታ ጀምር (Start Game)
-        </button>
-    </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="script.js"></script>
