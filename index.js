@@ -1,27 +1,59 @@
-const { Telegraf } = require('telegraf');
 const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
 const http = require('http');
+const { Server } = require('socket.io');
 const path = require('path');
 
 const app = express();
-const bot = new Telegraf(process.env.BOT_TOKEN);
 const server = http.createServer(app);
+const io = new Server(server, {
+    cors: { origin: "*" }
+});
 
-const db = new sqlite3.Database('./bingo.db');
-db.run(`CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT, balance REAL DEFAULT 100.0)`);
-
+// የፋይሎች ማውጫ (Folder) ትክክል መሆኑን ማረጋገጥ
 app.use(express.static(path.join(__dirname, 'public')));
 
-bot.start((ctx) => {
-    const appUrl = process.env.APP_URL;
-    ctx.reply(`እንኳን ወደ Arif Bingo በደህና መጡ! 🎰`, {
-        reply_markup: {
-            inline_keyboard: [[{ text: "Play Bingo 🎮", web_app: { url: `${appUrl}/index.html` } }]]
+let calledNumbers = [];
+let playersCount = 0;
+
+// የቢንጎ ቁጥሮችን በየ 5 ሰከንዱ እንዲያወጣ ማድረግ
+function startBingo() {
+    setInterval(() => {
+        if (calledNumbers.length < 75) {
+            let nextNum;
+            do {
+                nextNum = Math.floor(Math.random() * 75) + 1;
+            } while (calledNumbers.includes(nextNum));
+            
+            calledNumbers.push(nextNum);
+            io.emit('nextNumber', { 
+                number: nextNum, 
+                calledNumbers: calledNumbers 
+            });
+        } else {
+            calledNumbers = []; // ጨዋታውን እንደገና ለመጀመር
         }
+    }, 5000); 
+}
+
+io.on('connection', (socket) => {
+    playersCount++;
+    console.log('አዲስ ተጫዋች ገብቷል!');
+    
+    // ለገቡት ተጫዋቾች ያሉትን መረጃዎች መላክ
+    io.emit('updateStats', { 
+        playersCount: playersCount,
+        derash: (playersCount * 10) * 0.9 // ኮሚሽን ቀንሶ
+    });
+
+    socket.on('disconnect', () => {
+        playersCount--;
+        io.emit('updateStats', { playersCount: playersCount });
     });
 });
 
+startBingo();
+
 const PORT = process.env.PORT || 3000;
-bot.launch();
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
