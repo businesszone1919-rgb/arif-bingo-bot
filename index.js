@@ -5,55 +5,66 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
-    cors: { origin: "*" }
-});
+const io = new Server(server);
 
-// የፋይሎች ማውጫ (Folder) ትክክል መሆኑን ማረጋገጥ
 app.use(express.static(path.join(__dirname, 'public')));
 
-let calledNumbers = [];
-let playersCount = 0;
+let gameState = {
+    phase: "SELECTION", // "SELECTION" ወይም "PLAYING"
+    timer: 50,
+    calledNumbers: [],
+    players: {}, // { socketId: { selected: [], wallet: 100, isPaid: true } }
+    derash: 0
+};
 
-// የቢንጎ ቁጥሮችን በየ 5 ሰከንዱ እንዲያወጣ ማድረግ
-function startBingo() {
-    setInterval(() => {
-        if (calledNumbers.length < 75) {
-            let nextNum;
-            do {
-                nextNum = Math.floor(Math.random() * 75) + 1;
-            } while (calledNumbers.includes(nextNum));
-            
-            calledNumbers.push(nextNum);
-            io.emit('nextNumber', { 
-                number: nextNum, 
-                calledNumbers: calledNumbers 
-            });
+// የ50 ሰከንድ ዑደት
+function startGlobalTimer() {
+    let interval = setInterval(() => {
+        if (gameState.timer > 0) {
+            gameState.timer--;
         } else {
-            calledNumbers = []; // ጨዋታውን እንደገና ለመጀመር
+            if (gameState.phase === "SELECTION") {
+                gameState.phase = "PLAYING";
+                gameState.timer = 0; // መቆጠሩን ያቆማል
+                startCallingNumbers();
+            }
         }
-    }, 5000); 
+        io.emit('stateUpdate', gameState);
+    }, 1000);
+}
+
+function startCallingNumbers() {
+    let callInterval = setInterval(() => {
+        if (gameState.calledNumbers.length < 75) {
+            let next;
+            do { next = Math.floor(Math.random() * 75) + 1; } 
+            while (gameState.calledNumbers.includes(next));
+            
+            gameState.calledNumbers.push(next);
+            io.emit('nextNumber', { number: next, list: gameState.calledNumbers });
+        } else {
+            clearInterval(callInterval);
+        }
+    }, 4000); // በየ 4 ሰከንዱ
 }
 
 io.on('connection', (socket) => {
-    playersCount++;
-    console.log('አዲስ ተጫዋች ገብቷል!');
-    
-    // ለገቡት ተጫዋቾች ያሉትን መረጃዎች መላክ
-    io.emit('updateStats', { 
-        playersCount: playersCount,
-        derash: (playersCount * 10) * 0.9 // ኮሚሽን ቀንሶ
-    });
+    gameState.players[socket.id] = { selected: [], wallet: 1000, isPaid: true };
+    socket.emit('stateUpdate', gameState);
 
-    socket.on('disconnect', () => {
-        playersCount--;
-        io.emit('updateStats', { playersCount: playersCount });
+    // ተጫዋቹ ቁጥር ሲመርጥ ለሁሉም LIVE እንዲታይ
+    socket.on('selectNumber', (num) => {
+        if (gameState.phase === "SELECTION") {
+            let p = gameState.players[socket.id];
+            if (p.selected.includes(num)) {
+                p.selected = p.selected.filter(n => n !== num);
+            } else if (p.selected.length < 15) {
+                p.selected.push(num);
+            }
+            io.emit('playerAction', { id: socket.id, selected: p.selected });
+        }
     });
 });
 
-startBingo();
-
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+startGlobalTimer();
+server.listen(3000, () => console.log("Bingo Server Running..."));
