@@ -1,59 +1,29 @@
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-const path = require('path');
-
-const app = express();
-const server = http.createServer(app);
-const io = new Server(server, {
-    cors: { origin: "*" }
-});
-
-// የፋይሎች ማውጫ (Folder) ትክክል መሆኑን ማረጋገጥ
-app.use(express.static(path.join(__dirname, 'public')));
-
-let calledNumbers = [];
-let playersCount = 0;
-
-// የቢንጎ ቁጥሮችን በየ 5 ሰከንዱ እንዲያወጣ ማድረግ
-function startBingo() {
-    setInterval(() => {
-        if (calledNumbers.length < 75) {
-            let nextNum;
-            do {
-                nextNum = Math.floor(Math.random() * 75) + 1;
-            } while (calledNumbers.includes(nextNum));
-            
-            calledNumbers.push(nextNum);
-            io.emit('nextNumber', { 
-                number: nextNum, 
-                calledNumbers: calledNumbers 
-            });
-        } else {
-            calledNumbers = []; // ጨዋታውን እንደገና ለመጀመር
-        }
-    }, 5000); 
-}
-
-io.on('connection', (socket) => {
-    playersCount++;
-    console.log('አዲስ ተጫዋች ገብቷል!');
-    
-    // ለገቡት ተጫዋቾች ያሉትን መረጃዎች መላክ
-    io.emit('updateStats', { 
-        playersCount: playersCount,
-        derash: (playersCount * 10) * 0.9 // ኮሚሽን ቀንሶ
-    });
-
-    socket.on('disconnect', () => {
-        playersCount--;
-        io.emit('updateStats', { playersCount: playersCount });
-    });
-});
-
-startBingo();
-
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+<!DOCTYPE html>
+<html lang="am">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arif Bingo Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --primary: #1a237e; --gold: #ffd700; --white: #ffffff; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; text-align: center; }
+        .header { background: var(--primary); color: white; padding: 40px 20px; border-radius: 0 0 25px 25px; }
+        .balance-card { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; margin-top: 10px; }
+        .amount { font-size: 2.2rem; color: var(--gold); font-weight: bold; }
+        .play-btn { background: #4caf50; color: white; border: none; padding: 20px; width: 90%; border-radius: 15px; font-size: 1.2rem; font-weight: bold; margin-top: 20px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>እንኳን ደህና መጡ!</h2>
+        <div class="balance-card">
+            <div>ያሎት ሂሳብ</div>
+            <div class="amount">1,250.00 ETB</div>
+        </div>
+    </div>
+    <button class="play-btn" onclick="window.location.href='game.html'">
+        <i class="fas fa-play"></i> ጨዋታ ጀምር (Start Game)
+    </button>
+</body>
+</html>
