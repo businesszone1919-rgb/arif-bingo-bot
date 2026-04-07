@@ -1,14 +1,12 @@
 {
-  "name": "arif-bingo-bot",
+  "name": "bingo-game",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "server/server.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node server/server.js"
   },
   "dependencies": {
-    "telegraf": "^4.12.2",
     "express": "^4.18.2",
-    "sqlite3": "^5.1.6",
     "socket.io": "^4.7.2"
   }
 }
