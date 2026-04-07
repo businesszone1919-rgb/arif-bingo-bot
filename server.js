@@ -6,21 +6,26 @@ const io = require('socket.io')(http, {
 });
 const path = require('path');
 
-// 'public' የሚል ፎልደር ካለህ እሱን ይጠቀማል፣ ካልሆነ ዋናውን ፎልደር
-app.use(express.static(path.join(__dirname, 'public')));
+// ፋይሎቹ ያሉበትን ቦታ ለሰርቨሩ ማሳወቅ
+app.use(express.static(__dirname));
 
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 io.on('connection', (socket) => {
-  console.log('A user connected');
+  console.log('ተጫዋች ተገናኝቷል!');
+  
+  socket.on('numberClicked', (data) => {
+    io.emit('updateBoard', data);
+  });
+
   socket.on('disconnect', () => {
-    console.log('User disconnected');
+    console.log('ተጫዋች ወጥቷል');
   });
 });
 
 const PORT = process.env.PORT || 3000;
 http.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`ሰርቨር በፖርት ${PORT} ላይ እየሰራ ነው`);
 });
