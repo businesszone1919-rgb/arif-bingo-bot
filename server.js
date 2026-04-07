@@ -6,15 +6,15 @@ const io = require('socket.io')(http, {
 });
 const path = require('path');
 
-// ፋይሎቹ ያሉበትን ቦታ ለሰርቨሩ ማሳወቅ
-app.use(express.static(__dirname));
+// 'public' ፎልደር ውስጥ ያሉትን ፋይሎች (html, css, js) እንዲያነብ ያደርጋል
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 io.on('connection', (socket) => {
-  console.log('ተጫዋች ተገናኝቷል!');
+  console.log('አዲስ ተጫዋች ገብቷል');
   
   socket.on('numberClicked', (data) => {
     io.emit('updateBoard', data);
@@ -26,6 +26,6 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-http.listen(PORT, () => {
-  console.log(`ሰርቨር በፖርት ${PORT} ላይ እየሰራ ነው`);
+server.listen(PORT, () => {
+  console.log(`ሰርቨሩ በፖርት ${PORT} ላይ እየሰራ ነው`);
 });
