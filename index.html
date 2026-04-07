@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Bingo</title>
+  <style>
+    body { background:#0b0f2a; color:white; text-align:center; }
+    .grid { display:grid; grid-template-columns:repeat(5,60px); gap:10px; justify-content:center;}
+    .cell { padding:20px; border:1px solid cyan; }
+    .selected { background:green; }
+  </style>
+</head>
+<body>
+
+<h2>🎱 Bingo Game</h2>
+<div id="timer">50</div>
+
+<div class="grid" id="grid"></div>
+
+<script>
+let time = 50;
+let timer = setInterval(()=>{
+  time--;
+  document.getElementById("timer").innerText = time;
+},1000);
+
+// create grid
+for(let i=1;i<=25;i++){
+  let d=document.createElement("div");
+  d.className="cell";
+  d.innerText=i;
+
+  d.onclick=()=>{
+    d.classList.toggle("selected");
+  };
+
+  document.getElementById("grid").appendChild(d);
+}
+</script>
+
+</body>
+</html>
