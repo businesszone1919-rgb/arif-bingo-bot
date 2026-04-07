@@ -3,159 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arif Bingo - Professional Board</title>
+    <title>Arif Bingo Live</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        :root { --bg: #2d1b17; --panel: #4a2c26; --accent: #ffd700; --white: #ffffff; --green: #4caf50; --blue: #2196f3; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; color: white; overflow-x: hidden; }
+        :root { --bg: #2d1b17; --accent: #ffd700; --green: #4caf50; --panel: #4a2c26; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; text-align: center; }
         
-        /* Top Navigation */
-        .top-nav { display: flex; justify-content: space-between; padding: 10px; background: rgba(0,0,0,0.4); align-items: center; }
-        .balance-chip { background: var(--panel); padding: 5px 12px; border-radius: 20px; border: 1px solid var(--accent); font-weight: bold; color: var(--accent); }
+        /* Header Bars */
+        .bar { display: flex; justify-content: space-between; padding: 10px; background: rgba(0,0,0,0.4); align-items: center; }
+        .stat-box { font-size: 0.7rem; color: #ccc; }
+        .stat-box b { display: block; color: var(--accent); font-size: 0.9rem; }
 
-        /* Stats Grid */
-        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; padding: 10px; background: #3d2520; }
-        .stat-item { font-size: 0.65rem; text-align: center; color: #bcaaa4; }
-        .stat-item b { display: block; color: var(--accent); font-size: 0.85rem; }
+        /* 1-75 Selection Board */
+        .grid-75 { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; padding: 10px; }
+        .n-btn { aspect-ratio: 1; background: #5d4037; border: none; color: white; border-radius: 3px; font-size: 0.7rem; }
+        .n-btn.active { background: var(--green); box-shadow: 0 0 8px var(--green); }
+        .n-btn.called { background: var(--accent); color: black; }
 
-        /* Timer & Current Number */
-        .game-status-bar { display: flex; justify-content: space-around; align-items: center; padding: 15px; background: #1a0f0d; }
-        .timer-circle { width: 50px; height: 50px; border-radius: 50%; border: 3px solid var(--green); line-height: 50px; font-weight: bold; font-size: 1.2rem; }
-        .current-num { width: 70px; height: 70px; background: white; color: var(--bg); border-radius: 50%; line-height: 70px; font-size: 2rem; font-weight: bold; border: 4px solid var(--accent); }
-
-        /* 1-75 Numbers Board (እንደ ምስሉ) */
-        .numbers-board { display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; padding: 10px; background: #3d2520; margin: 5px; border-radius: 5px; }
-        .board-cell { aspect-ratio: 1; background: #5d4037; font-size: 0.6rem; display: flex; align-items: center; justify-content: center; border-radius: 2px; opacity: 0.5; }
-        .board-cell.called { background: var(--accent); color: black; opacity: 1; font-weight: bold; }
-
-        /* Main Bingo Card */
-        .card-container { background: #512da8; padding: 10px; border-radius: 10px; margin: 10px auto; display: inline-block; }
-        .bingo-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; background: white; padding: 5px; border-radius: 5px; }
-        .cell { width: 42px; height: 42px; background: #fffde7; color: #333; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 3px; font-size: 1rem; }
+        /* Game Card (B-I-N-G-O) */
+        .bingo-card { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; background: white; padding: 5px; border-radius: 5px; margin: 10px; }
+        .cell { width: 45px; height: 45px; background: #fffde7; color: #333; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 3px; }
         .cell.marked { background: var(--green) !important; color: white !important; }
 
-        /* Action Buttons */
-        .action-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px; }
-        .btn { border: none; padding: 10px; border-radius: 5px; font-weight: bold; color: white; cursor: pointer; font-size: 0.8rem; }
-        .btn-dep { background: var(--blue); }
-        .btn-with { background: #f44336; }
-        .btn-inv { background: #9c27b0; }
-        .btn-auto { background: var(--green); grid-column: span 3; margin-top: 5px; }
-        .btn-auto.active { background: #1b5e20; border: 2px solid var(--accent); }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
-<div class="top-nav">
-    <button onclick="history.back()" style="background:none; border:none; color:white;"><i class="fas fa-chevron-left"></i></button>
-    <div class="balance-chip"><i class="fas fa-wallet"></i> <span id="userBalance">1,250.00</span> ETB</div>
-    <i class="fas fa-cog"></i>
+<div id="selectionHeader" class="bar">
+    <button onclick="location.href='/'" style="background:none; border:none; color:white;"><i class="fas fa-arrow-left"></i></button>
+    <div class="stat-box">Main Wallet<b id="mainW">1250</b></div>
+    <div class="stat-box">Play Wallet<b id="playW">0</b></div>
+    <div class="stat-box">Timer<b id="timer" style="color:red; font-size:1.2rem;">50</b></div>
+    <button onclick="location.reload()" style="background:none; border:none; color:white;"><i class="fas fa-sync"></i></button>
 </div>
 
-<div class="stats-grid">
-    <div class="stat-item">ተጫዋች<b id="pCount">--</b></div>
-    <div class="stat-item">ምድብ<b>10</b></div>
-    <div class="stat-item">ደራሽ<b id="derash">--</b></div>
-    <div class="stat-item">Called<b id="calledCount">0</b></div>
+<div id="playingHeader" class="bar hidden">
+    <div class="stat-box">Game ID<b>#BBDDNWIX</b></div>
+    <div class="stat-box">Players<b id="pCount">0</b></div>
+    <div class="stat-box">Bet<b>10</b></div>
+    <div class="stat-box">Derash<b id="derash">0</b></div>
+    <div class="stat-box">Called<b id="calledCount">0</b></div>
 </div>
 
-<div class="game-status-bar">
-    <div class="timer-circle" id="timer">50</div>
-    <div class="current-num" id="bigNum">--</div>
-    <div style="font-size: 0.8rem; color: var(--green);">ተራ ቁጥር<br><b id="turnNum">#1</b></div>
+<div id="selectionBody">
+    <h4 id="msg">እባክዎ 15 ቁጥሮችን ይምረጡ</h4>
+    <div class="grid-75" id="board75"></div>
 </div>
 
-<div class="numbers-board" id="mainBoard">
-    </div>
-
-<div style="text-align:center;">
-    <div class="card-container">
-        <div class="bingo-grid" id="playerCard">
-            </div>
-    </div>
-</div>
-
-<div class="action-grid">
-    <button class="btn btn-dep" onclick="alert('Deposit via Admin')">Deposit</button>
-    <button class="btn btn-with" onclick="alert('Withdraw via Admin')">Withdraw</button>
-    <button class="btn btn-inv" onclick="alert('Invite link copied!')">Invite</button>
-    <button class="btn btn-auto" id="autoBtn">Automatic Marking</button>
+<div id="playingBody" class="hidden">
+    <div style="font-size: 3rem; margin: 20px; font-weight: bold; color: var(--accent);" id="currentNum">--</div>
+    <div class="bingo-card" id="myCard"></div>
 </div>
 
 <script>
     const socket = io();
-    let isAuto = false;
-    let myNums = [];
-    let calledList = [];
-    let timeLeft = 50;
+    let mySelected = [];
+    let isGameOn = false;
 
     // 1-75 ቦርድ መፍጠር
-    const board = document.getElementById('mainBoard');
-    for(let i=1; i<=75; i++) {
-        const div = document.createElement('div');
-        div.className = 'board-cell';
-        div.id = 'board-' + i;
-        div.innerText = i;
-        board.appendChild(div);
+    const board = document.getElementById('board75');
+    for(let i=1; i<=75; i++){
+        const b = document.createElement('button');
+        b.className = 'n-btn'; b.id = 'btn-'+i; b.innerText = i;
+        b.onclick = () => socket.emit('selectNumber', i);
+        board.appendChild(b);
     }
 
-    // የ50 ሰከንድ ቆጣሪ
-    setInterval(() => {
-        if(timeLeft > 0) {
-            timeLeft--;
-            document.getElementById('timer').innerText = timeLeft;
-        }
-    }, 1000);
+    socket.on('stateUpdate', (state) => {
+        document.getElementById('timer').innerText = state.timer;
+        document.getElementById('derash').innerText = (Object.keys(state.players).length * 10) + " ETB";
+        document.getElementById('pCount').innerText = Object.keys(state.players).length;
 
-    function generateCard() {
-        const grid = document.getElementById('playerCard');
-        grid.innerHTML = ''; myNums = [];
-        const ranges = [[1,15],[16,30],[31,45],[46,60],[61,75]];
-        for(let r=0; r<5; r++) {
-            for(let c=0; c<5; c++) {
-                const cell = document.createElement('div');
-                cell.className = 'cell';
-                if(r===2 && c===2) {
-                    cell.innerHTML = '<i class="fas fa-star" style="color:gold"></i>';
-                    cell.classList.add('marked');
-                } else {
-                    let n; do { n = Math.floor(Math.random()*15) + ranges[c][0]; } while(myNums.includes(n));
-                    myNums.push(n); cell.innerText = n; cell.id = 'my-' + n;
-                }
-                grid.appendChild(cell);
-            }
+        if(state.phase === "PLAYING" && !isGameOn) {
+            switchToPlayMode();
         }
-    }
+    });
+
+    socket.on('playerAction', (data) => {
+        if(data.id === socket.id) {
+            mySelected = data.selected;
+            // ሁሉንም አጥፋና የተመረጡትን አረንጓዴ አድርግ
+            document.querySelectorAll('.n-btn').forEach(b => b.classList.remove('active'));
+            mySelected.forEach(n => document.getElementById('btn-'+n).classList.add('active'));
+        }
+    });
 
     socket.on('nextNumber', (data) => {
-        calledList = data.calledNumbers;
-        timeLeft = 50; // ቁጥር ሲመጣ ቆጣሪው ይታደሳል
-        document.getElementById('bigNum').innerText = data.number;
-        document.getElementById('calledCount').innerText = calledList.length;
-        document.getElementById('turnNum').innerText = '#' + calledList.length;
-        
-        // ቦርዱ ላይ ማርክ አድርግ
-        const boardCell = document.getElementById('board-' + data.number);
-        if(boardCell) boardCell.classList.add('called');
-
-        if(isAuto && myNums.includes(data.number)) {
-            const myCell = document.getElementById('my-' + data.number);
-            if(myCell) myCell.classList.add('marked');
+        document.getElementById('currentNum').innerText = data.number;
+        document.getElementById('calledCount').innerText = data.list.length;
+        if(mySelected.includes(data.number)) {
+            const cell = document.getElementById('cell-'+data.number);
+            if(cell) cell.classList.add('marked');
         }
     });
 
-    socket.on('updateStats', (data) => {
-        document.getElementById('pCount').innerText = data.playersCount;
-        document.getElementById('derash').innerText = data.derash + ' ETB';
-    });
+    function switchToPlayMode() {
+        isGameOn = true;
+        document.getElementById('selectionHeader').classList.add('hidden');
+        document.getElementById('selectionBody').classList.add('hidden');
+        document.getElementById('playingHeader').classList.remove('hidden');
+        document.getElementById('playingBody').classList.remove('hidden');
 
-    document.getElementById('autoBtn').onclick = function() {
-        isAuto = !isAuto;
-        this.classList.toggle('active');
-    };
-
-    generateCard();
+        // ካርቴላውን መፍጠር
+        const card = document.getElementById('myCard');
+        mySelected.forEach(n => {
+            const div = document.createElement('div');
+            div.className = 'cell'; div.id = 'cell-'+n; div.innerText = n;
+            card.appendChild(div);
+        });
+    }
 </script>
 </body>
 </html>
