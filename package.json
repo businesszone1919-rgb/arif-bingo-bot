@@ -1,12 +1,11 @@
 {
-  "name": "bingo-game",
+  "name": "telegram-bingo",
   "version": "1.0.0",
-  "main": "server/server.js",
+  "main": "bot.js",
   "scripts": {
-    "start": "node server/server.js"
+    "start": "node bot.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "socket.io": "^4.7.2"
+    "node-telegram-bot-api": "^0.61.0"
   }
 }
