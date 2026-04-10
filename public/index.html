@@ -1,23 +1,602 @@
+# arif_bingo_final.py
+# ሙሉ ለቢዝነስ ዝግጁ የሆነ አሪፍ ቢንጎ ጨዋታ
+# ለማስኬድ: pip install flask flask-socketio eventlet requests
+
+import os
+import json
+import random
+import time
+import threading
+from datetime import datetime
+from flask import Flask, render_template_string, request, jsonify
+from flask_socketio import SocketIO, emit, join_room
+import requests
+
+# ==================== ቅንብሮች (እዚህ ላይ ብቻ ይለውጡ) ====================
+TELEGRAM_TOKEN = "8543538788:AAEn7RA41UhNq_vrS53uZP-ApK75yfruCi4"  # የእርስዎ ቦት ቶከን
+ADMIN_ID = 394266471  # የእርስዎ ቴሌግራም አይዲ
+ADMIN_COMMISSION = 10  # 10% ኮሚሽን
+GAME_COST = 10  # አንድ ካርድ ዋጋ (ብር)
+SELECTION_TIME = 50  # ካርድ ለመምረጥ የሚሰጥ ጊዜ (ሰከንድ)
+CALL_INTERVAL = 4  # በየስንት ሰከንድ አዲስ ቁጥር ይወጣል
+WEBAPP_URL = "https://arif-bingo.onrender.com"  # ከተሰራ በኋላ ይህን ያዘምኑ
+
+# ==================== ውሂብ ማከማቻ (ዘላቂ) ====================
+DATA_FILE = "bingo_data.json"
+
+def load_data():
+    if os.path.exists(DATA_FILE):
+        with open(DATA_FILE, 'r') as f:
+            return json.load(f)
+    return {
+        "users": {},
+        "transactions": [],
+        "admin_balance": 0,
+        "total_commission": 0,
+        "total_bets": 0,
+        "total_payouts": 0
+    }
+
+def save_data(data):
+    with open(DATA_FILE, 'w') as f:
+        json.dump(data, f, indent=2)
+
+db = load_data()
+
+def get_user(user_id):
+    uid = str(user_id)
+    if uid not in db['users']:
+        db['users'][uid] = {
+            'name': f"User_{uid[-4:]}",
+            'balance': 50,  # አዲስ ተጠቃሚ 50 ብር ነጻ
+            'games_played': 0,
+            'wins': 0,
+            'total_bet': 0,
+            'total_won': 0,
+            'joined': datetime.now().isoformat()
+        }
+        save_data(db)
+    return db['users'][uid]
+
+def update_balance(user_id, amount, trans_type):
+    uid = str(user_id)
+    if uid in db['users']:
+        db['users'][uid]['balance'] += amount
+        if trans_type == 'bet':
+            db['users'][uid]['total_bet'] += amount
+            db['users'][uid]['games_played'] += 1
+            db['total_bets'] += amount
+        elif trans_type == 'win':
+            db['users'][uid]['total_won'] += amount
+            db['users'][uid]['wins'] += 1
+            db['total_payouts'] += amount
+        db['transactions'].append({
+            'type': trans_type,
+            'user_id': uid,
+            'amount': amount,
+            'balance': db['users'][uid]['balance'],
+            'timestamp': datetime.now().isoformat()
+        })
+        save_data(db)
+        return True
+    return False
+
+# ==================== Flask እና SocketIO ====================
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'arif-bingo-secret-key-2024'
+socketio = SocketIO(app, cors_allowed_origins="*")
+
+# የጨዋታ HTML (በቴሌግራም ውስጥ ለመስራት ተስተካክሏል)
+GAME_HTML = """
 <!DOCTYPE html>
-<html lang="am">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Beteseb Style Bingo</title>
-    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>አሪፍ ቢንጎ</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: linear-gradient(135deg, #1a0033 0%, #2d004d 100%);
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 12px;
+            min-height: 100vh;
+        }
+        .container { max-width: 800px; margin: 0 auto; }
+        .header { text-align: center; padding: 15px; background: #4d0099; border-radius: 15px; margin-bottom: 12px; }
+        .balance { background: #27ae60; padding: 10px; border-radius: 10px; text-align: center; margin-bottom: 12px; font-weight: bold; font-size: 16px; }
+        .stats { display: flex; flex-wrap: wrap; justify-content: space-around; background: rgba(0,0,0,0.5); border-radius: 15px; padding: 10px; margin-bottom: 12px; gap: 5px; }
+        .stat { text-align: center; background: #4d0099; padding: 5px 12px; border-radius: 20px; font-size: 12px; }
+        .stat span { font-size: 18px; color: #f1c40f; font-weight: bold; }
+        .current-number { text-align: center; font-size: 56px; background: #e67e22; padding: 15px; border-radius: 20px; margin: 12px 0; font-weight: bold; letter-spacing: 2px; }
+        .numbers-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; margin: 12px 0; }
+        .num-btn { aspect-ratio: 1; background: #34495e; border: none; color: white; font-size: 13px; font-weight: bold; border-radius: 8px; cursor: pointer; transition: 0.1s; }
+        .num-btn.selected { background: #27ae60; transform: scale(0.95); }
+        .num-btn.disabled { opacity: 0.5; cursor: not-allowed; }
+        .bingo-card { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; background: rgba(255,255,255,0.1); padding: 12px; border-radius: 15px; margin-top: 12px; }
+        .card-cell { aspect-ratio: 1; background: white; color: #333; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 8px; font-size: 14px; }
+        .card-cell.marked { background: #27ae60; color: white; }
+        .card-cell.free { background: #f1c40f; color: #333; }
+        button { background: #e67e22; border: none; padding: 12px 20px; color: white; border-radius: 10px; margin: 6px; cursor: pointer; font-size: 15px; font-weight: bold; transition: 0.1s; }
+        button:active { transform: scale(0.97); }
+        .timer { text-align: center; background: #e67e22; padding: 12px; border-radius: 12px; margin: 12px 0; font-size: 20px; font-weight: bold; }
+        @media (max-width: 600px) {
+            .num-btn { font-size: 10px; }
+            .card-cell { font-size: 11px; }
+            .current-number { font-size: 44px; }
+            .timer { font-size: 16px; }
+        }
+    </style>
 </head>
 <body>
-    <div class="header">
-        <h2 style="color: #eab308;">ቤተሰብ ቢንጎ</h2>
-        <div style="font-size: 0.9rem;">Wallet: <span id="balance">0.00 ETB</span></div>
-    </div>
-
-    <div id="msg" style="margin-bottom: 10px; font-weight: bold;">15 ቁጥሮችን ይምረጡ</div>
-    
-    <div class="grid-75" id="board75">
+    <div class="container">
+        <div class="header"><h2>🎲 አሪፍ ቢንጎ 🎲</h2></div>
+        <div class="balance">💰 ሂሳብ: <span id="userBalance">{{ balance }}</span> ETB</div>
+        <div class="stats">
+            <div class="stat">👥 ተጫዋቾች: <span id="playerCount">0</span></div>
+            <div class="stat">💰 ድራሽ: <span id="prizePool">0</span> Br</div>
+            <div class="stat">🔢 የተጠሩ: <span id="calledCount">0</span>/75</div>
         </div>
-
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js"></script>
+        <div id="selectionArea">
+            <div class="timer" id="timer">⏱️ 50 ሰከንድ ቀርቷል</div>
+            <div class="numbers-grid" id="numbersGrid"></div>
+            <button onclick="confirmCard()" id="confirmBtn">✅ ካርዴን አረጋገጥኩ ({{ game_cost }} ETB)</button>
+        </div>
+        <div id="gameArea" style="display:none;">
+            <div class="current-number" id="currentNumber">--</div>
+            <div id="history" class="stats">📢 የተጠሩ ቁጥሮች: --</div>
+            <div class="bingo-card" id="bingoCard"></div>
+        </div>
+        <div style="text-align:center; margin-top:20px;"><button onclick="location.reload()">🔄 አዲስ ጨዋታ</button></div>
+    </div>
+    <script>
+        const tg = window.Telegram?.WebApp;
+        if (tg) { tg.expand(); tg.ready(); }
+        const gameId = '{{ game_id }}';
+        let userId = '{{ user_id }}';
+        let userBalance = {{ balance }};
+        let selectedNumbers = [];
+        let cardConfirmed = false;
+        let socket = null;
+        let myCard = null;
+        let myMarked = [];
+        
+        function initNumberGrid() {
+            const grid = document.getElementById('numbersGrid');
+            grid.innerHTML = '';
+            for (let i = 1; i <= 75; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'num-btn';
+                btn.textContent = i;
+                btn.onclick = () => {
+                    if (cardConfirmed) return;
+                    const idx = selectedNumbers.indexOf(i);
+                    if (idx === -1) {
+                        if (selectedNumbers.length < 25) {
+                            selectedNumbers.push(i);
+                            btn.classList.add('selected');
+                        } else {
+                            alert('25 ቁጥሮች ተመርጠዋል! አንዱን ያስወግዱ');
+                        }
+                    } else {
+                        selectedNumbers.splice(idx, 1);
+                        btn.classList.remove('selected');
+                    }
+                };
+                grid.appendChild(btn);
+            }
+        }
+        
+        function confirmCard() {
+            if (selectedNumbers.length !== 25) {
+                alert(`እባክዎ ${25 - selectedNumbers.length} ቁጥሮች ይምረጡ!`);
+                return;
+            }
+            if (userBalance < {{ game_cost }}) {
+                alert('በቂ ገንዘብ የለዎትም! እባክዎ ሂሳብዎን ይሙሉ');
+                return;
+            }
+            cardConfirmed = true;
+            socket.emit('select_card', { game_id: gameId, user_id: userId, numbers: selectedNumbers });
+            document.querySelectorAll('.num-btn').forEach(btn => btn.classList.add('disabled'));
+            document.getElementById('confirmBtn').disabled = true;
+            document.getElementById('confirmBtn').textContent = '⏳ እየተጠበቀ...';
+        }
+        
+        function renderCard(card, marked) {
+            const container = document.getElementById('bingoCard');
+            container.innerHTML = '';
+            for (let i = 0; i < 25; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'card-cell';
+                if (i === 12) {
+                    cell.textContent = 'FREE';
+                    cell.classList.add('free');
+                } else {
+                    cell.textContent = card[i];
+                }
+                if (marked.includes(i)) cell.classList.add('marked');
+                container.appendChild(cell);
+            }
+        }
+        
+        function connectSocket() {
+            socket = io();
+            socket.on('connect', () => {
+                socket.emit('join', { game_id: gameId, user_id: userId });
+            });
+            socket.on('state', (data) => {
+                document.getElementById('playerCount').innerText = data.player_count;
+                document.getElementById('prizePool').innerText = data.prize_pool;
+                document.getElementById('calledCount').innerText = data.called_count;
+                if (data.current_number) document.getElementById('currentNumber').innerHTML = data.current_number;
+                if (!data.is_selecting) {
+                    document.getElementById('selectionArea').style.display = 'none';
+                    document.getElementById('gameArea').style.display = 'block';
+                }
+            });
+            socket.on('card', (data) => {
+                myCard = data.card;
+                myMarked = data.marked;
+                renderCard(myCard, myMarked);
+                userBalance -= {{ game_cost }};
+                document.getElementById('userBalance').innerText = userBalance;
+                document.getElementById('selectionArea').style.display = 'none';
+                document.getElementById('gameArea').style.display = 'block';
+                if (tg) tg.HapticFeedback.notificationOccurred('success');
+            });
+            socket.on('number', (data) => {
+                document.getElementById('currentNumber').innerHTML = data.number;
+                document.getElementById('calledCount').innerText = data.called;
+                document.getElementById('history').innerHTML = '📢 የተጠሩ ቁጥሮች: ' + data.history.join(', ');
+                if (data.marked && myCard) {
+                    myMarked = data.marked;
+                    renderCard(myCard, myMarked);
+                }
+                if (data.winner === userId) {
+                    alert(`🎉 እንኳን ደስ ያለዎት! ቢንጎ ደርሶዎታል! ሽልማት: ${data.reward} ETB`);
+                    userBalance += data.reward;
+                    document.getElementById('userBalance').innerText = userBalance;
+                    if (tg) tg.HapticFeedback.notificationOccurred('success');
+                }
+            });
+            socket.on('timer', (data) => {
+                document.getElementById('timer').innerHTML = `⏱️ ${data.remaining} ሰከንድ ቀርቷል`;
+            });
+        }
+        
+        initNumberGrid();
+        connectSocket();
+    </script>
 </body>
 </html>
+"""
+
+# የጨዋታ ክፍል ሎጂክ
+active_games = {}
+
+class BingoGame:
+    def __init__(self, gid):
+        self.id = gid
+        self.players = {}          # user_id -> {name, card, marked, paid, balance}
+        self.called_numbers = []
+        self.is_active = False
+        self.is_selecting = True
+        self.selection_end_time = time.time() + SELECTION_TIME
+        self.current_number = None
+        self.winners = []
+        self.total_bets = 0
+        self.prize_pool = 0
+        
+    def add_player(self, uid, name, balance):
+        if uid not in self.players:
+            has_paid = balance >= GAME_COST
+            self.players[uid] = {
+                'name': name,
+                'card': None,
+                'marked': set(),
+                'paid': has_paid,
+                'balance': balance
+            }
+            if has_paid:
+                self.total_bets += GAME_COST
+                self.prize_pool = int(self.total_bets * (100 - ADMIN_COMMISSION) / 100)
+            return True
+        return False
+    
+    def select_card(self, uid, numbers):
+        if uid in self.players and self.players[uid]['card'] is None:
+            if len(numbers) == 25:
+                self.players[uid]['card'] = numbers
+                self.players[uid]['marked'].add(12)  # FREE space
+                return True
+        return False
+    
+    def call_number(self):
+        if not self.is_active:
+            return None
+        remaining = [n for n in range(1, 76) if n not in self.called_numbers]
+        if not remaining:
+            self.is_active = False
+            return None
+        number = random.choice(remaining)
+        self.called_numbers.append(number)
+        letter = ['B', 'I', 'N', 'G', 'O'][(number-1)//15]
+        self.current_number = f"{letter}-{number}"
+        
+        # ምልክት ማድረግ
+        for p in self.players.values():
+            if p['card'] and number in p['card']:
+                idx = p['card'].index(number)
+                p['marked'].add(idx)
+        
+        self.check_winners()
+        return {
+            'num': self.current_number,
+            'called': len(self.called_numbers),
+            'history': self.called_numbers[-10:]
+        }
+    
+    def check_winners(self):
+        new_winners = []
+        for uid, p in self.players.items():
+            if uid not in self.winners and p['card'] and p['paid']:
+                if self.is_bingo(p['marked']):
+                    self.winners.append(uid)
+                    new_winners.append(uid)
+                    reward = self.prize_pool // len(self.winners) if self.winners else self.prize_pool
+                    p['balance'] += reward
+                    update_balance(uid, reward, 'win')
+        return new_winners
+    
+    def is_bingo(self, marked):
+        for row in range(5):
+            if all(row*5 + col in marked for col in range(5)):
+                return True
+        for col in range(5):
+            if all(row*5 + col in marked for row in range(5)):
+                return True
+        if all(i*5 + i in marked for i in range(5)):
+            return True
+        if all(i*5 + (4-i) in marked for i in range(5)):
+            return True
+        return False
+    
+    def start_game(self):
+        self.is_selecting = False
+        self.is_active = True
+        # አድሚን ኮሚሽን መዝግብ
+        commission = int(self.total_bets * ADMIN_COMMISSION / 100)
+        db['admin_balance'] += commission
+        db['total_commission'] += commission
+        save_data(db)
+
+# Socket.IO ክስተቶች
+games = {}
+
+@socketio.on('join')
+def handle_join(data):
+    gid = data['game_id']
+    uid = data['user_id']
+    if gid not in games:
+        games[gid] = BingoGame(gid)
+        threading.Timer(1.0, timer_loop, [gid]).start()
+    game = games[gid]
+    user = get_user(uid)
+    game.add_player(uid, user['name'], user['balance'])
+    join_room(gid)
+    emit('state', {
+        'player_count': len(game.players),
+        'prize_pool': game.prize_pool,
+        'called_count': len(game.called_numbers),
+        'current_number': game.current_number,
+        'is_selecting': game.is_selecting
+    }, room=gid)
+    if game.players[uid]['card']:
+        emit('card', {
+            'card': game.players[uid]['card'],
+            'marked': list(game.players[uid]['marked'])
+        }, room=request.sid)
+
+@socketio.on('select_card')
+def handle_select(data):
+    gid = data['game_id']
+    uid = data['user_id']
+    nums = data['numbers']
+    if gid in games:
+        game = games[gid]
+        if game.select_card(uid, nums):
+            update_balance(uid, -GAME_COST, 'bet')
+            emit('card', {
+                'card': nums,
+                'marked': list(game.players[uid]['marked'])
+            }, room=request.sid)
+            # ሁሉም ከመረጡ ጨዋታውን ጀምር
+            all_selected = all(p['card'] is not None for p in game.players.values())
+            if all_selected and game.is_selecting:
+                game.start_game()
+                emit('state', {
+                    'player_count': len(game.players),
+                    'prize_pool': game.prize_pool,
+                    'called_count': len(game.called_numbers),
+                    'is_selecting': False
+                }, room=gid)
+                start_calling(gid)
+
+def timer_loop(gid):
+    if gid in games:
+        game = games[gid]
+        if game.is_selecting:
+            remaining = max(0, int(game.selection_end_time - time.time()))
+            socketio.emit('timer', {'remaining': remaining}, room=gid)
+            if remaining > 0:
+                threading.Timer(1.0, timer_loop, [gid]).start()
+            else:
+                game.start_game()
+                socketio.emit('state', {
+                    'player_count': len(game.players),
+                    'prize_pool': game.prize_pool,
+                    'called_count': len(game.called_numbers),
+                    'is_selecting': False
+                }, room=gid)
+                start_calling(gid)
+
+def start_calling(gid):
+    def call_loop():
+        if gid in games and games[gid].is_active:
+            result = games[gid].call_number()
+            if result:
+                winners = games[gid].winners
+                socketio.emit('number', {
+                    'number': result['num'],
+                    'called': result['called'],
+                    'history': result['history'],
+                    'winner': winners[0] if winners else None,
+                    'reward': games[gid].prize_pool // len(winners) if winners else None,
+                    'marked': list(games[gid].players.get(list(games[gid].players.keys())[0], {}).get('marked', []))  # ለማሳያ
+                }, room=gid)
+            threading.Timer(CALL_INTERVAL, call_loop).start()
+    call_loop()
+
+@app.route('/')
+def index():
+    game_id = request.args.get('game_id', 'main')
+    user_id = request.args.get('user_id', str(random.randint(10000, 99999)))
+    user = get_user(user_id)
+    return render_template_string(GAME_HTML,
+        game_id=game_id,
+        user_id=user_id,
+        balance=user['balance'],
+        game_cost=GAME_COST
+    )
+
+@app.route('/api/balance/<user_id>')
+def api_balance(user_id):
+    user = get_user(user_id)
+    return jsonify({'balance': user['balance']})
+
+@app.route('/api/admin/report')
+def admin_report():
+    return jsonify({
+        'total_users': len(db['users']),
+        'total_bets': db['total_bets'],
+        'total_commission': db['total_commission'],
+        'total_payouts': db['total_payouts'],
+        'admin_balance': db['admin_balance']
+    })
+
+# ==================== ቴሌግራም ቦት (ቀላል የማመላለሻ ማሄጃ) ====================
+def send_telegram_message(chat_id, text, reply_markup=None):
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    payload = {'chat_id': chat_id, 'text': text, 'parse_mode': 'HTML'}
+    if reply_markup:
+        payload['reply_markup'] = reply_markup
+    try:
+        requests.post(url, json=payload)
+    except Exception as e:
+        print(f"Telegram send error: {e}")
+
+def run_telegram_bot():
+    last_update_id = 0
+    while True:
+        try:
+            url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/getUpdates?offset={last_update_id+1}&timeout=30"
+            resp = requests.get(url, timeout=35)
+            if resp.status_code == 200:
+                data = resp.json()
+                for update in data.get('result', []):
+                    last_update_id = update['update_id']
+                    if 'message' in update:
+                        msg = update['message']
+                        chat_id = msg['chat']['id']
+                        text = msg.get('text', '')
+                        if text == '/start':
+                            user = get_user(chat_id)
+                            keyboard = {
+                                "keyboard": [["🎮 አዲስ ጨዋታ"], ["💰 ሂሳቤ", "🏆 ውጤቴ"], ["📜 ህጎች"]],
+                                "resize_keyboard": True
+                            }
+                            send_telegram_message(chat_id,
+                                f"🎲 <b>እንኳን ወደ አሪፍ ቢንጎ በደህና መጡ!</b>\n\n"
+                                f"💰 የእርስዎ ሂሳብ: {user['balance']} ETB\n"
+                                f"🎮 አንድ ጨዋታ: {GAME_COST} ETB\n"
+                                f"🏆 ሽልማት: እስከ 50 ETB\n\n"
+                                f"👇 'አዲስ ጨዋታ' በመጫን ይጀምሩ",
+                                json.dumps(keyboard))
+                        elif text == '🎮 አዲስ ጨዋታ':
+                            user = get_user(chat_id)
+                            if user['balance'] < GAME_COST:
+                                send_telegram_message(chat_id, f"❌ በቂ ገንዘብ የለዎትም!\n💰 ያለዎት: {user['balance']} ETB")
+                            else:
+                                game_id = f"tg_{chat_id}_{int(time.time())}"
+                                game_url = f"{WEBAPP_URL}?game_id={game_id}&user_id={chat_id}"
+                                keyboard = {
+                                    "inline_keyboard": [[{"text": "🎮 ጨዋታውን ክፈት", "web_app": {"url": game_url}}]]
+                                }
+                                send_telegram_message(chat_id,
+                                    f"🎲 አዲስ ጨዋታ ተዘጋጅቷል!\n\n"
+                                    f"💰 የካርድ ዋጋ: {GAME_COST} ETB\n"
+                                    f"🏆 ከፍተኛ ሽልማት: 50 ETB\n"
+                                    f"⏱️ ካርድ ለመምረጥ {SELECTION_TIME} ሰከንድ\n\n"
+                                    f"👇 ከታች ባለው አዝራር ጨዋታውን ይክፈቱ",
+                                    json.dumps(keyboard))
+                        elif text == '💰 ሂሳቤ':
+                            user = get_user(chat_id)
+                            send_telegram_message(chat_id,
+                                f"💳 <b>የእርስዎ ሂሳብ</b>\n"
+                                f"━━━━━━━━━━━━━━━\n"
+                                f"💰 ቀሪ ብር: {user['balance']} ETB\n"
+                                f"🎮 የተጫወቱት: {user['games_played']}\n"
+                                f"🏆 ያሸነፉት: {user['wins']}\n"
+                                f"💵 ጠቅላላ ክፍያ: {user['total_bet']} ETB\n"
+                                f"🎉 ጠቅላላ አሸናፊነት: {user['total_won']} ETB")
+                        elif text == '🏆 ውጤቴ':
+                            user = get_user(chat_id)
+                            rate = (user['wins'] / user['games_played'] * 100) if user['games_played'] > 0 else 0
+                            send_telegram_message(chat_id,
+                                f"📊 <b>የእርስዎ ስታቲስቲክስ</b>\n"
+                                f"━━━━━━━━━━━━━━━\n"
+                                f"🎮 ጨዋታዎች: {user['games_played']}\n"
+                                f"🏆 አሸናፊነት: {user['wins']}\n"
+                                f"📈 የማሸነፊያ መጠን: {rate:.1f}%\n"
+                                f"💰 አጠቃላይ ክፍያ: {user['total_bet']} ETB\n"
+                                f"🎉 አጠቃላይ አሸናፊነት: {user['total_won']} ETB")
+                        elif text == '📜 ህጎች':
+                            send_telegram_message(chat_id,
+                                f"📜 <b>የአሪፍ ቢንጎ ህጎች</b>\n"
+                                f"━━━━━━━━━━━━━━━━━━━\n"
+                                f"1️⃣ አንድ ጨዋታ {GAME_COST} ETB ያስከፍላል\n"
+                                f"2️⃣ 25 ቁጥሮች እራስዎ ይምረጡ\n"
+                                f"3️⃣ ለመምረጥ {SELECTION_TIME} ሰከንድ ጊዜ አለዎት\n"
+                                f"4️⃣ ቢንጎ ማለት ሙሉ ረድፍ/አምድ/ዲያግናል ማሟላት ነው\n"
+                                f"5️⃣ አሸናፊ ሲወጣ ሽልማት ይከፈላል\n"
+                                f"6️⃣ አዲስ ተጠቃሚ 50 ETB ነጻ ያገኛል\n"
+                                f"7️⃣ ከድራሹ {ADMIN_COMMISSION}% ለአድሚን ይቀራል")
+                        elif text == '/admin' and str(chat_id) == str(ADMIN_ID):
+                            report = (f"📊 <b>የአድሚን ሪፖርት</b>\n"
+                                      f"━━━━━━━━━━━━━━━\n"
+                                      f"👥 ጠቅላላ ተጠቃሚዎች: {len(db['users'])}\n"
+                                      f"💰 ጠቅላላ ውርርድ: {db['total_bets']} ETB\n"
+                                      f"📊 ጠቅላላ ኮሚሽን: {db['total_commission']} ETB\n"
+                                      f"🏆 ጠቅላላ ሽልማት: {db['total_payouts']} ETB\n"
+                                      f"💼 የአድሚን ቀሪ: {db['admin_balance']} ETB")
+                            send_telegram_message(chat_id, report)
+        except Exception as e:
+            print(f"Bot error: {e}")
+        time.sleep(1)
+
+# ==================== ዋና ማስነሻ ====================
+if __name__ == '__main__':
+    print("=" * 55)
+    print("🎲 አሪፍ ቢንጎ (ለቢዝነስ) እየጀመረ ነው...")
+    print("=" * 55)
+    # ቴሌግራም ቦት በሌላ ማያ ገጽ አስነሳ
+    bot_thread = threading.Thread(target=run_telegram_bot, daemon=True)
+    bot_thread.start()
+    print("✅ ቴሌግራም ቦት ተጀምሯል")
+    print("🌐 ዌብ አገልጋይ በማስነሳት ላይ...")
+    print(f"🔗 ዌብ አፕ ዩ አር ኤል: {WEBAPP_URL}")
+    print("=" * 55)
+    socketio.run(app, host='0.0.0.0', port=10000, debug=False)
